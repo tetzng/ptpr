@@ -11,7 +11,7 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "pivo-pr",
+  Use:   "ptpr",
 	Short: "create PR template from Pivotal Tracker",
 	Long:  `create Pull Request template from your project's Pivotal Tracker.`,
 	// Uncomment the following line if your bare application

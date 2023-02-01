@@ -28,17 +28,7 @@ var config struct {
 }
 
 func init() {
-	rootCmd.AddCommand(tempCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// tempCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// tempCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.AddCommand(genCmd)
 
 	data, err := ioutil.ReadFile(os.Getenv("HOME") + "/.config/pivo_conf.yml")
 	if err != nil {
@@ -47,20 +37,29 @@ func init() {
 
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
-		fmt.Printf("error: %v", err)
 		panic(err)
 	}
 }
 
-// tempCmd represents the temp command
-var tempCmd = &cobra.Command{
-	Use:   "temp",
-	Short: "Print PR template",
-	Long: `Print Pull Request template from your ~/.config/pivo_conf.yml
-and your current branch name.`,
+// genCmd represents the gen command
+var genCmd = &cobra.Command{
+	Use:   "gen",
+	Short: "Generate PR options from your Pivotal Tracker Project",
+  Long: `Generate Pull Request (PR) options from a Pivotal Tracker project.
+The tool reads the API token and project details from a YAML configuration file
+located at ~/.config/pivo_conf.yml. The gen command retrieves the story
+information from Pivotal Tracker API using the story ID obtained from the
+current Git branch name. The retrieved story information (name and URL)
+is printed as a string in the format of "--title=[#STORY_ID]STORY_NAME --body=STORY_URL".`,
 	Run: func(cmd *cobra.Command, args []string) {
 		projectRoot := getProjectRoot()
 		storyID, err := getStoryID()
+
+    if len(storyID) == 0 {
+      fmt.Println("No story ID")
+      return
+    }
+
 		if err != nil {
 			panic(err)
 		}
@@ -75,6 +74,7 @@ and your current branch name.`,
 
 		resp, err := client.Do(req)
 		if err != nil {
+      fmt.Printf("%v",resp)
 			panic(err)
 		}
 		defer resp.Body.Close()
@@ -89,8 +89,15 @@ and your current branch name.`,
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("Title: [#%s]%s\n", storyID, story["name"])
-		fmt.Printf("Body: %s\n", story["url"])
+    if story["name"] == nil {
+      fmt.Println("No story name.")
+      return
+    }
+    if story["url"] == nil {
+      fmt.Println("No story url.")
+      return
+    }
+    fmt.Printf("--title=[#%s]%s --body=%s\n", storyID, story["name"], story["url"])
 	},
 }
 
@@ -109,14 +116,12 @@ func expandTilde(path string) string {
 
 func getProjectRoot() string {
 	dir, err := os.Getwd()
-	fmt.Println("dir: ", dir)
 	if err != nil {
 		panic(err)
 	}
 
 	for k, v := range config.Projects {
 		expandedTildeRoot := expandTilde(v.Root)
-		fmt.Println("expandedTildeRoot: ", expandedTildeRoot)
 		path := os.ExpandEnv(expandedTildeRoot)
 		if strings.HasPrefix(dir, path) {
 			return k
@@ -140,7 +145,6 @@ func getStoryID() (string, error) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("branch: ", string(branch))
 
 	ref := strings.TrimSpace(string(branch))
 	if !strings.HasPrefix(ref, "ref: refs/heads/") {

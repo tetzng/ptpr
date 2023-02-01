@@ -1,4 +1,4 @@
-module pivo-pr
+module ptpr
 
 go 1.19
 
