@@ -19,7 +19,7 @@ import (
 
 type Project struct {
 	PIVOTAL_PROJECT_ID int    `yaml:"PIVOTAL_PROJECT_ID"`
-	Root               string `yaml:"Root"`
+	PIVOTAL_API_TOKEN  string `yaml:"PIVOTAL_API_TOKEN,omitempty"`
 }
 
 var config struct {
@@ -41,11 +41,10 @@ func init() {
 	}
 }
 
-// genCmd represents the gen command
 var genCmd = &cobra.Command{
 	Use:   "gen",
 	Short: "Generate PR options from your Pivotal Tracker Project",
-  Long: `Generate Pull Request (PR) options from a Pivotal Tracker project.
+	Long: `Generate Pull Request (PR) options from a Pivotal Tracker project.
 The tool reads the API token and project details from a YAML configuration file
 located at ~/.config/pivo_conf.yml. The gen command retrieves the story
 information from Pivotal Tracker API using the story ID obtained from the
@@ -55,10 +54,10 @@ is printed as a string in the format of "--title=[#STORY_ID]STORY_NAME --body=ST
 		projectRoot := getProjectRoot()
 		storyID, err := getStoryID()
 
-    if len(storyID) == 0 {
-      fmt.Println("No story ID")
-      return
-    }
+		if len(storyID) == 0 {
+			fmt.Println("No story ID")
+			return
+		}
 
 		if err != nil {
 			panic(err)
@@ -70,11 +69,16 @@ is printed as a string in the format of "--title=[#STORY_ID]STORY_NAME --body=ST
 		if err != nil {
 			panic(err)
 		}
-		req.Header.Set("X-TrackerToken", config.PIVOTAL_API_TOKEN)
+
+		apiToken := config.Projects[projectRoot].PIVOTAL_API_TOKEN
+		if apiToken == "" {
+			apiToken = config.PIVOTAL_API_TOKEN
+		}
+		req.Header.Set("X-TrackerToken", apiToken)
 
 		resp, err := client.Do(req)
 		if err != nil {
-      fmt.Printf("%v",resp)
+			fmt.Printf("%v", resp)
 			panic(err)
 		}
 		defer resp.Body.Close()
@@ -89,29 +93,24 @@ is printed as a string in the format of "--title=[#STORY_ID]STORY_NAME --body=ST
 		if err != nil {
 			panic(err)
 		}
-    if story["name"] == nil {
-      fmt.Println("No story name.")
-      return
-    }
-    if story["url"] == nil {
-      fmt.Println("No story url.")
-      return
-    }
-    fmt.Printf("--title=[#%s]%s --body=%s\n", storyID, story["name"], story["url"])
+		if story["name"] == nil {
+			fmt.Println("No story name.")
+			return
+		}
+		if story["url"] == nil {
+			fmt.Println("No story url.")
+			return
+		}
+		fmt.Printf("--title=[#%s]%s --body=%s\n", storyID, story["name"], story["url"])
 	},
 }
 
 func expandTilde(path string) string {
-	if !strings.HasPrefix(path, "~") {
-		return path
-	}
-
 	usr, err := user.Current()
 	if err != nil {
 		return ""
 	}
-
-	return strings.Replace(path, "~", usr.HomeDir, 1)
+	return usr.HomeDir + "/" + strings.TrimPrefix(path, "~")
 }
 
 func getProjectRoot() string {
@@ -120,8 +119,8 @@ func getProjectRoot() string {
 		panic(err)
 	}
 
-	for k, v := range config.Projects {
-		expandedTildeRoot := expandTilde(v.Root)
+	for k := range config.Projects {
+		expandedTildeRoot := expandTilde(k)
 		path := os.ExpandEnv(expandedTildeRoot)
 		if strings.HasPrefix(dir, path) {
 			return k
