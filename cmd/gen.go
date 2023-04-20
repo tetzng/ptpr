@@ -30,7 +30,7 @@ var config struct {
 func init() {
 	rootCmd.AddCommand(genCmd)
 
-	data, err := ioutil.ReadFile(os.Getenv("HOME") + "/.config/pivo_conf.yml")
+	data, err := ioutil.ReadFile(os.Getenv("HOME") + "/.config/ptpr.yaml")
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +46,7 @@ var genCmd = &cobra.Command{
 	Short: "Generate PR options from your Pivotal Tracker Project",
 	Long: `Generate Pull Request (PR) options from a Pivotal Tracker project.
 The tool reads the API token and project details from a YAML configuration file
-located at ~/.config/pivo_conf.yml. The gen command retrieves the story
+located at ~/.config/ptpr.yaml. The gen command retrieves the story
 information from Pivotal Tracker API using the story ID obtained from the
 current Git branch name. The retrieved story information (name and URL)
 is printed as a string in the format of "--title=[#STORY_ID]STORY_NAME --body=STORY_URL".`,
