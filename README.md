@@ -1,6 +1,6 @@
 # ptpr
 
-ptpr is a CLI tool for generating pull request options from your Pivotal Tracker project. The tool reads the API token and project details from a YAML configuration file located at `~/.config/pivo_conf.yml`. The `gen` command retrieves the story information from Pivotal Tracker API using the story ID obtained from the current Git branch name. The retrieved story information (name and URL) is printed as a string in the format of `--title=[#STORY_ID]STORY_NAME --body=STORY_URL`.
+ptpr is a CLI tool for generating pull request options from your Pivotal Tracker project. The tool reads the API token and project details from a YAML configuration file located at `~/.config/ptpr.yaml`. The `gen` command retrieves the story information from Pivotal Tracker API using the story ID obtained from the current Git branch name. The retrieved story information (name and URL) is printed as a string in the format of `--title=[#STORY_ID]STORY_NAME --body=STORY_URL`.
 
 ## Installation
 
@@ -53,12 +53,24 @@ ptpr gen
 
 This will output the pull request options based on the story ID found in the current Git branch name.
 
+## Setup
+
+To create a configuration file using the init command, run:
+
+```sh
+ptpr init
+```
+
+This will interactively create or update the configuration file at ~/.config/ptpr.yaml. The init command will prompt you for your Pivotal API Token and the Pivotal Project ID for the current project, and it will create a configuration file with this information. If the configuration file already exists, the init command will add or update the project and API token for the current project. To overwrite existing configuration file without prompt, use -f option.
+
+After running the init command, you can use the gen command to generate pull request options based on the story ID found in the current Git branch name.
+
 ## Integration with GitHub CLI
 
 The output of the `gen` command is formatted to be used directly as arguments for the `gh pr create` command from the [GitHub CLI](https://cli.github.com/). You can use the `xargs` command to pass the output of `ptpr gen` directly to `gh pr create` like this:
 
 ```sh
-pivo gen | xargs gh pr create
+ptpr gen | xargs gh pr create
 ```
 
 This command will create a new pull request on GitHub using the generated title and body from the Pivotal Tracker story.

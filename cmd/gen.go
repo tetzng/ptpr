@@ -32,12 +32,14 @@ func init() {
 
 	data, err := ioutil.ReadFile(os.Getenv("HOME") + "/.config/ptpr.yaml")
 	if err != nil {
-		panic(err)
-	}
-
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
-		panic(err)
+		if !os.IsNotExist(err) {
+			panic(err)
+		}
+	} else {
+		err = yaml.Unmarshal(data, &config)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -51,6 +53,12 @@ information from Pivotal Tracker API using the story ID obtained from the
 current Git branch name. The retrieved story information (name and URL)
 is printed as a string in the format of "--title=[#STORY_ID]STORY_NAME --body=STORY_URL".`,
 	Run: func(cmd *cobra.Command, args []string) {
+		configPath := os.Getenv("HOME") + "/.config/ptpr.yaml"
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			fmt.Println("Configuration file not found. Please run 'ptpr init' to create a configuration file.")
+			return
+		}
+
 		projectRoot := getProjectRoot()
 		storyID, err := getStoryID()
 
