@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
+	"os/user"
 )
 
 func init() {
@@ -39,7 +40,8 @@ This command will create the file if it doesn't exist, and add or update project
 
 			reader := bufio.NewReader(os.Stdin)
 
-			fmt.Print("Enter your Pivotal API Token (leave blank if already set): ")
+			fmt.Println("You can find your API Token at https://www.pivotaltracker.com/profile")
+			fmt.Print("Enter your Pivotal API Token: ")
 			apiToken, _ := reader.ReadString('\n')
 			apiToken = strings.TrimSpace(apiToken)
 
@@ -47,14 +49,24 @@ This command will create the file if it doesn't exist, and add or update project
 				config.PIVOTAL_API_TOKEN = apiToken
 			}
 
+			usr, err := user.Current()
+			if err != nil {
+				panic(err)
+			}
+
+			homeDir := usr.HomeDir
+
 			currentDir, err := os.Getwd()
 			if err != nil {
 				panic(err)
 			}
 
-			projectRoot := filepath.Base(currentDir)
+			projectRoot, err := filepath.Rel(homeDir, currentDir)
+			if err != nil {
+				panic(err)
+			}
 
-			fmt.Printf("Enter the Pivotal Project ID for the current project (%s): ", projectRoot)
+			fmt.Print("Enter the Pivotal Project ID for the current project (example: 1234567): ")
 			var projectID int
 			_, err = fmt.Scanf("%d", &projectID)
 			if err != nil {
